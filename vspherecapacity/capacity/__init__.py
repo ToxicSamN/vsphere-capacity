@@ -5,8 +5,10 @@ import time
 import random
 from datetime import datetime, timedelta
 from vspherecapacity.credentials.credstore import Credential
+from log.setup import addClassLogger
 
 
+@addClassLogger
 class CapacitySuper(object):
 
     def write_csv(self, fpath):
@@ -28,6 +30,7 @@ class CapacitySuper(object):
         return dict_obj
 
 
+@addClassLogger
 class DatabaseObject(object):
 
     def __init__(self, columns, sql_data):
@@ -35,6 +38,7 @@ class DatabaseObject(object):
             setattr(self, column.strip(), sql_data[columns.index(column)])
 
 
+@addClassLogger
 class DatabaseAccess(object):
 
     def __init__(self, host, db, user, password=None):
@@ -243,6 +247,7 @@ class DatabaseAccess(object):
             self.connection.commit()
 
 
+@addClassLogger
 class ForeignKey:
 
     def __init__(self, table, foreign_table, key):

@@ -3,16 +3,17 @@ import ssl
 import atexit
 import json
 import requests
+import logging
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
 from datetime import datetime, timedelta
-from vspherecapacity.logging.handler import Logger
+from log.setup import addClassLogger
 from vspherecapacity.credentials.credstore import Credential, AESCipher
 from pyVmomi import vim
 from pyVmomi import vmodl
 from pyVim import connect
 
-LOGGERS = Logger(log_file='/var/log/vcenter_handle.log', error_log_file='/var/log/vcenter_handle_err.log')
+logger = logging.getLogger(__name__)
 
 
 class CustomObject(object):
@@ -49,7 +50,7 @@ class CustomObject(object):
 
             csvfile.close()
 
-
+@addClassLogger
 class VcenterList:
 
     def __init__(self, cig_web='cigweb-dev'):
@@ -75,7 +76,7 @@ class VcenterList:
         tmp = [v for v in self.vcenter_list if v.get('env_type', None).lower() == env_type.lower()]
         return tmp
 
-
+@addClassLogger
 class Vcenter:
     """
     Vcenter class handles basic vcenter methods such as connect, disconnect, get_container_view, ect
@@ -109,8 +110,6 @@ class Vcenter:
         logger lines have been commented out until logging is fully implemented
         :return:
         """
-        # TODO: Ensure logging is setup properly to reinstate the logger lines
-        logger = LOGGERS.get_logger('connect_vcenter')
 
         try:
             # if no ssl_context has been provided then set this to unverified context
@@ -118,10 +117,10 @@ class Vcenter:
                 self.ssl_context = ssl._create_unverified_context()
                 self.ssl_context.verify_mode = ssl.CERT_NONE
 
-            logger.debug('Getting Credential Information')
+                self.__log.debug('Getting Credential Information')
 
             if not self.__password and not self.username:
-                logger.debug('No username or password provided. Will read from credstore')
+                self.__log.debug('No username or password provided. Will read from credstore')
                 cred = Credential('oppvfog01')
                 cred_dict = cred.get_credential()
                 self.username = cred_dict.get('username', None)
@@ -134,8 +133,8 @@ class Vcenter:
                 self.username = cred_dict.get('username', None)
                 self.__password = self.store_password(cred_dict.get('password', None))
                 cred_dict = None
-            logger.info('Conecting to vCenter {}'.format(self.vcenter))
-            logger.debug(
+            self.__log.info('Conecting to vCenter {}'.format(self.vcenter))
+            self.__log.debug(
                 'Connection Params: vCenter: {}, Username: {}, {}, SSL_Context: {}'.format(self.vcenter,
                                                                                            self.username,
                                                                                            self.__password,
@@ -147,7 +146,7 @@ class Vcenter:
                                            )
 
             atexit.register(connect.Disconnect, self.si)
-            logger.debug('ServiceInstance: {}'.format(self.si))
+            self.__log.debug('ServiceInstance: {}'.format(self.si))
 
             self.content = self.si.RetrieveContent()
 
@@ -158,8 +157,7 @@ class Vcenter:
             self.name = (vc_name.strip('.nordstrom.net')).lower()
 
         except BaseException as e:
-            print('Exception: {} \n Args: {}'.format(e, e.args))
-            logger.exception('Exception: {} \n Args: {}'.format(e, e.args))
+            self.__log.exception('Exception: {} \n Args: {}'.format(e, e.args))
 
     def disconnect(self):
         connect.Disconnect(self.si)
